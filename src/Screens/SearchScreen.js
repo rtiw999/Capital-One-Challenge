@@ -1,178 +1,242 @@
-import React, { Component } from 'react'
-import PropTypes from 'prop-types'
-import TopHead from '../Components/TopHeadForm'
-import Everything from '../Components/EverythingForm'
-import ArticleCard from '../Components/ArticleCard'
-import { Grid, Paper, Typography, AppBar, Tab, Tabs, withStyles } from '@material-ui/core';
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import { Tabs, Paper, AppBar, Tab, withStyles, Grid, Typography, Fade, Grow, createMuiTheme, MuiThemeProvider } from '@material-ui/core';
+import TopHead from '../Components/TopHeadForm';
+import EverythingForm from '../Components/EverythingForm';
+import ArticleCard from '../Components/ArticleCard';
+import { teal } from '@material-ui/core/colors';
 
 const useStyles = theme => ({
     root: {
-        flex: 1,
-        marginTop: theme.spacing(3),
-        marginBottom: theme.spacing(3),
-        padding: theme.spacing(2),
-        [theme.breakpoints.up(600 + theme.spacing(3) * 2)]: {
-          marginTop: theme.spacing(6),
-          marginBottom: theme.spacing(6),
-          padding: theme.spacing(3),
-        },
+        flexGrow: 1,
+        justifyContent: 'space-around',
+        flexDirection: 'row-reverse',
+        alignItems: 'space-between',
+        backgroundColor: '#faebd7'
     },
     layout: {
-        marginLeft: theme.spacing(2),
-        marginRight: theme.spacing(2),
+        justifyContent: 'space-around',
+        flexDirection: 'row-reverse',
+        alignItems: 'space-between',
         [theme.breakpoints.up(600 + theme.spacing(2) * 2)]: {
-          width: 600,
-          marginLeft: 'auto',
-          marginRight: 'auto',
+            width: 600,
+            marginLeft: 'auto',
+            marginRight: 'auto',
         },
-      },
-      paper: {
+    },
+    paper: {
+        justifyItems: 'space-between',
+        flexDirection: 'column',
         marginTop: theme.spacing(3),
         marginBottom: theme.spacing(3),
         padding: theme.spacing(2),
         [theme.breakpoints.up(600 + theme.spacing(3) * 2)]: {
-          marginTop: theme.spacing(6),
-          marginBottom: theme.spacing(6),
-          padding: theme.spacing(3),
+            marginTop: theme.spacing(6),
+            marginBottom: theme.spacing(6),
+            padding: theme.spacing(3),
         },
-      },
-      buttons: {
-        display: 'flex',
-        justifyContent: 'flex-end',
-      },
-})
+    },
+    cards: {
+        direction: 'row',
+        justify: 'center',
+        alignItems: 'center',
+        [theme.breakpoints.up(600 + theme.spacing(3) * 2)]: {
+            marginTop: theme.spacing(2),
+            marginBottom: theme.spacing(2),
+            padding: theme.spacing(7),
+        },
+    },
+});
 
-const endpoints = [{ name: "Top headlines", endpoint: 'top-headlines' }, { name: "Everything", endpoint: 'everything' }];
-const baseURL = new URL('https://newsapi.org/v2/');
+const overallTheme = createMuiTheme({
+    palette: {
+        primary: {
+            main: teal[200]
+        },
+        secondary: {
+            main: teal[400],
+          },
+    }
+});
+
+const baseURL = new URL("https://newsapi.org/v2/");
+const endpoints = [{ name: "Top Headlines", value: "top-headlines" }, { name: "Everything", value: "everything" }]
 
 class SearchScreen extends Component {
     constructor(props) {
         super(props);
         this.state = {
             tab: 0,
-            ep: endpoints[0].endpoint,
-            url: "",
-            jsonData: null
+            ep: endpoints[0].value,
+            jsonInfo: null,
+            loading: false,
+            qParams: "",
+            url: ""
         }
+
     }
 
+    // Used to make API calls to the NewsAPI whenever the proper url is constructed
     componentDidUpdate() {
-        if (this.state.url !== "") {
-            fetch(this.state.url)
+        if ("" !== this.state.url) {
+            const query = this.state.url + this.state.qParams;
+
+            fetch(query)
                 .then(res => res.json())
-                .then(parsedData => {
+                .then(parsed => {
                     this.setState({
-                        jsonData: parsedData,
-                        url: ""
+                        loading: true,
+                        jsonInfo: parsed
                     })
-                })
-                .catch(err => console.error(err));
+                }).catch(e => { console.error(e) });
+
+            this.setState({ url: "" });
         }
 
-        console.log(this.state.jsonData);
+        console.log(this.state.jsonInfo);
     }
 
-    a11yProps = (index) => {
+    a11yProps(index) {
         return {
             id: `full-width-tab-${index}`,
             'aria-controls': `full-width-tabpanel-${index}`,
         };
     }
 
-    handleChange = (event, newValue) => {
-        this.setState({
-            tab: newValue,
-            ep: endpoints[newValue].endpoint
-        })
+    setTab = (newVal) => {
+        this.setState({ tab: newVal });
     }
 
-    handleParams = (params) => {
+    setEP = (newVal) => {
+        this.setState({ ep: endpoints[newVal].value });
+    }
+
+    handleChange = (event, newValue) => {
+        let index = newValue;
+        this.setTab(index);
+        this.setEP(index);
+    }
+
+    handleFetch = (params) => {
         let URL = baseURL.toString();
         URL = URL.replace('v2/', `v2/${this.state.ep}?`);
-        console.log(URL);
-        URL = URL + params.toString();
-        console.log("Should be change now: " + URL)
 
-        this.setState({ url: URL });
+        this.setState({
+            loading: false,
+            url: URL,
+            qParams: params
+        });
     }
 
-    displayForm = () => {
-        switch (this.state.tab) {
+    /*
+        A method that will render the correct form depending upon the setting of the App Bar at the top of the page.
+    */
+    getForm = (tab) => {
+        switch (tab) {
             case 0:
                 return (
-                    <>
-                        <TopHead getParams={this.handleParams} />
-                    </>
+                    <React.Fragment>
+                        <TopHead getParams={this.handleFetch} />
+                    </React.Fragment>
                 );
             case 1:
                 return (
-                    <>
-                        <Everything getParams={this.handleParams} />
-                    </>
+                    <React.Fragment>
+                        <EverythingForm getParams={this.handleFetch} />
+                    </React.Fragment>
                 );
             default:
                 return (
-                    <>
-                        <TopHead getParams={this.handleParams} />
-                    </>
-                )
+                    <React.Fragment>
+                        <Typography variant='h6' color='secondary' align='center' font='Roboto'>
+                            Note: If you search using sources, your will not be able to search by country or categories.
+                        </Typography>
+                        <TopHead getParams={this.handleFetch} />
+                    </React.Fragment>
+                );
         }
     }
 
-    displayCards = () => {
-        if (this.state.jsonData.status !== "ok") {
+    /* 
+        A method that display all of the articles returned by the fetch request with the user's parameters. If there are
+        no results, then it will print that there are no results.
+    */
+    displayArticles = () => {
+        if (this.state.jsonInfo === null) {
+            return null;
+        } else if (this.state.jsonInfo.status === "error") {
             return (
-                <Grid container justify='center'>
-                    <Grid item>
-                        <Typography color='error' variant='h2'> Unfortunately, the network request failed. Please try again. </Typography>
-                    </Grid>
-                </Grid>
-            )
-        } else if (this.state.jsonData.totalResults === 0) {
-            return (
-                <Grid container justify='center'>
-                    <Grid item>
-                        <Typography color='error' variant='h2'> Unfortunately your search didn't turn up anything. Please try again. </Typography>
-                    </Grid>
-                </Grid>
-            )
-        } else {
-            return (
-                <Grid container direction='row' className={this.props.paper} justify='center' alignItems='center'>
-                    {this.state.jsonData.articles.map(thingy => (
-                        <Grid item xs={4}>
-                            <ArticleCard article={thingy}/>
+                <>
+                    <Grid container justify='center'>
+                        <Grid item alignContent='center' >
+                            <Typography variant='h4' color='error'>{this.state.jsonInfo.status.message}</Typography>
                         </Grid>
-                    ))}
-                </Grid>
-            )
+                    </Grid>
+                </>
+            );
+        } else {
+            if (this.state.jsonInfo.totalResults === 0) {
+                return (
+                    <>
+                        <Fade in={this.state.loading}>
+                            <Typography color='error' component='header' variant='h5'>
+                                Unfortunately, there are no results for this search. Please try again.
+                             </Typography>
+                        </Fade>
+                    </>
+                );
+            } else {
+                return (
+                    <>
+                        <Grid
+                            container
+                            className={this.props.classes.cards}
+                        >
+                            {this.state.jsonInfo.articles.map((thingy) => (
+                                <Grid item xs={4}>
+                                    <Grow in={this.state.loading} timeout={{ appear: 2000 }}>
+                                        <div>
+                                            <ArticleCard
+                                                key={thingy.source.id}
+                                                article={thingy}
+                                            />
+                                        </div>
+                                    </Grow>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </>
+                );
+            }
         }
     }
 
     render() {
-        const {classes} = this.props;
+        const { classes } = this.props;
         return (
             <div className={classes.root}>
-                <Grid container className={classes.layout}>
-                    <AppBar position="fixed" color='default'>
-                        <Tabs
-                            value={this.state.tab}
-                            onChange={this.handleChange}
-                            indicatorColor="secondary"
-                            textColor="secondary"
-                            centered
-                        >
-                            <Tab label={endpoints[0].name} {...this.a11yProps(0)} />
-                            <Tab label={endpoints[1].name} {...this.a11yProps(1)} />
-                        </Tabs>
-                    </AppBar>
-                    <Paper className={classes.paper}>
-                        {this.displayForm()}
-                    </Paper>
-                </Grid>
-                {this.state.jsonData === null ? null : this.displayCards()}
+                <MuiThemeProvider theme={overallTheme}>
+                    <Grid container className={classes.layout}>
+                        <AppBar position="static" color="inherit">
+                            <Tabs
+                                value={this.state.tab}
+                                indicatorColor="secondary"
+                                textColor="secondary"
+                                onChange={this.handleChange}
+                                variant="fullWidth"
+                            >
+                                <Tab value={0} label={endpoints[0].name} {...this.a11yProps(0)} />
+                                <Tab value={1} label={endpoints[1].name} {...this.a11yProps(1)} />
+                            </Tabs>
+                        </AppBar>
+                        <Paper className={classes.paper}>
+                            {this.getForm(this.state.tab)}
+                        </Paper>
+                    </Grid>
+                    {this.displayArticles()}
+                </MuiThemeProvider>
             </div>
-        )
+        );
     }
 }
 
