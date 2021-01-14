@@ -59,7 +59,7 @@ const overallTheme = createMuiTheme({
     }
 });
 
-const proxy = "https://nifty-lalande-f5761d.netlify.app";
+const proxy = "https://nifty-lalande-f5761d.netlify.app/";
 const baseURL = new URL(`${proxy}https://newsapi.org/v2/`);
 const endpoints = [{ name: "Top Headlines", value: "top-headlines" }, { name: "Everything", value: "everything" }]
 
