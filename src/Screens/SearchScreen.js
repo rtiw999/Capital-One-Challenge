@@ -59,7 +59,8 @@ const overallTheme = createMuiTheme({
     }
 });
 
-const baseURL = new URL("https://newsapi.org/v2/");
+const proxy = "https://nifty-lalande-f5761d.netlify.app";
+const baseURL = new URL(`${proxy}https://newsapi.org/v2/`);
 const endpoints = [{ name: "Top Headlines", value: "top-headlines" }, { name: "Everything", value: "everything" }]
 
 class SearchScreen extends Component {
